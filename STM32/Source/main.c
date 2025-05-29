@@ -188,14 +188,14 @@ int main(void)
 
 		if (cnt_cb <= 5)
 		{
-			for(uint8_t i=0; i<NUM_SENSORS; i++)
+			for (uint8_t i=0; i<NUM_SENSORS; i++)
 			{
 				init[i] = distance[i];
 			}
 		}
 		else if (cnt_cb >= 10)
 		{
-			for(uint8_t i=0; i<NUM_SENSORS; i++)
+			for (uint8_t i=0; i<NUM_SENSORS; i++)
 			{
 				curr[i] = distance[i];
 				FloatToStr6(curr[i], data_dis[i], 2, 2);
@@ -286,5 +286,27 @@ int main(void)
 		// Gộp chuỗi và lưu dữ liệu vào txbuff
 		MergeStr();
 		delay_01ms(100);
+
+		if (!isSetup)
+		{
+			toggleLed2(100);
+		}
+		else if (isSetup)
+		{
+			GPIO_ResetBits(LED_GPIO_PORT, LED_FORWARD | LED_BACKWARD | LED_LEFT | LED_RIGHT);
+		}
+			
+		if (rcv_flag == 2)
+		{
+			memset(rxbuff, 0, sizeof(rxbuff));
+			stop_Robot();
+			delay_01ms(20000);
+			toggleLed1(500);
+			USART_SendData(UART4,'R');
+		}
+		else if (rcv_flag == 3)
+		{
+			NVIC_SystemReset();
+		}
 	}	
 }
