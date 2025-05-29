@@ -171,7 +171,8 @@ void setup()
   Serial.println("IP:" + IP.toString());
   
   /* Set up an mDNS domain */
-  if (!MDNS.begin("CSProbot")){
+  if (!MDNS.begin("CSProbot"))
+  {
     Serial.println("Error set up MDNS responder!");
     while(1) delay(1000);
   }
@@ -289,8 +290,17 @@ void loop()
   delay(200);
 }
 
-//------------------------------------------------------------------
-void trans_wifi(){
+/**
+ * @brief   Khởi tạo WiFi Access Point và cấu hình các tham số
+ * @details
+ *  - Chế độ WiFi: Access Point
+ *  - Thiết lập tên SSID, mật khẩu, kênh, số kết nối tối đa
+ *  - Cấu hình địa chỉ IP tĩnh cho AP
+ *  - Cấu hình công suất phát, chế độ tiết kiệm năng lượng, tự kết nối lại
+ *  - In thông tin cấu hình ra Serial Monitor
+ */
+void trans_wifi()
+{
   String status_wifi = "";
   esp_err_t err;
   WiFi.mode(WIFI_AP);
@@ -298,14 +308,19 @@ void trans_wifi(){
   WiFi.softAP(ssid_ap, pass_ap, WiFiChannel, 0, maxConnection);
   WiFi.softAPConfig(localip, gateway, subnet);
   status_wifi = WiFi.softAPConfig(localip, gateway, subnet) ? "Ready" : "Failed";
-  if (status_wifi == "Falied"){
+
+  if (status_wifi == "Falied")
+  {
     WiFi.softAPConfig(localip, gateway, subnet);
   }
+
   WiFi.setTxPower(WIFI_POWER_19dBm);
   WiFi.setAutoReconnect(false);
   WiFi.setAutoConnect(false);
   WiFi.persistent(false);
-  if (WiFi.getSleep() == true){
+
+  if (WiFi.getSleep() == true)
+  {
     WiFi.setSleep(false);
   }
 
@@ -315,17 +330,32 @@ void trans_wifi(){
   Serial.println("PASS:" + String(pass_ap));
 }
 
-//------------------------------------------------------------------
-void handle_Root(AsyncWebServerRequest *request){
+/**
+ * @brief   Xử lý request HTTP khi truy cập trang chủ
+ * @param   request  Con trỏ tới đối tượng request
+ */
+void handle_Root(AsyncWebServerRequest *request)
+{
   request->send(200, "text/html", htmlHomePage);
 }
 
-//------------------------------------------------------------------
-void handle_Setup(AsyncWebServerRequest *request){    
+/**
+ * @brief   Xử lý request cấu hình tham số điều khiển robot
+ * @details
+ *  - Kiểm tra và lấy tham số truyền lên từ form: tốc độ bánh xe, bàn chải,
+ *    trạng thái bàn chải, bánh xe, chế độ tự động, bơm nước.
+ *  - Chuyển đổi chuỗi sang số nguyên và giới hạn giá trị hợp lệ.
+ *  - Gửi phản hồi kết quả nhận tham số cho client.
+ *  - Gửi dữ liệu xuống STM qua hàm send_data_to_STM() nếu nhận thành công.
+ * @param   request  Con trỏ tới đối tượng request
+ */
+void handle_Setup(AsyncWebServerRequest *request)
+{    
   /* Get value from WebServer */
   if (request->hasParam(wheel_speed) && request->hasParam(brush_speed) &&
       request->hasParam(status_brush)&& request->hasParam(status_wheel)&&
-      request->hasParam(status_auto) && request->hasParam(status_pump)){
+      request->hasParam(status_auto) && request->hasParam(status_pump))
+  {
 
     String speed1 = request->getParam(wheel_speed)->value();   StrToInt(speed1, wheelSpeed);
     String speed2 = request->getParam(brush_speed)->value();   StrToInt(speed2, brushSpeed);
@@ -336,8 +366,10 @@ void handle_Setup(AsyncWebServerRequest *request){
 
     if (wheelSpeed < 0)       wheelSpeed = 0;
     else if (wheelSpeed > 23) wheelSpeed = 23;
+
     if (brushSpeed < 0)       brushSpeed = 0;
     else if (brushSpeed > 53) brushSpeed = 53;
+
     Serial.println("Received parameters");
     Serial.printf("Wheel Speed: %d\n", wheelSpeed);
     Serial.printf("Brush Speed: %d\n", brushSpeed);
@@ -348,7 +380,8 @@ void handle_Setup(AsyncWebServerRequest *request){
     isSetup = true;
     request->send(200, "text/plain", "Parameters received successful");
   }
-  else{
+  else
+  {
     isSetup = false;
     request->send(404, "text/plain", "Missing parameters");
   }
@@ -357,56 +390,87 @@ void handle_Setup(AsyncWebServerRequest *request){
   else return;
 }
 
-//------------------------------------------------------------------
-void handle_StopRobotEmergency(AsyncWebServerRequest *request){
+/**
+ * @brief   Xử lý dừng robot khẩn cấp
+ * @param   request  Con trỏ tới đối tượng request
+ */
+void handle_StopRobotEmergency(AsyncWebServerRequest *request)
+{
   digitalWrite(SE, HIGH);
 }
 
 //------------------------------------------------------------------
-void IRAM_ATTR ISR(){
+void IRAM_ATTR ISR()
+{
   isSE = true;
 }
 
-//------------------------------------------------------------------
-void handle_Forward(AsyncWebServerRequest *request){
+/**
+ * @brief   Xử lý lệnh di chuyển robot đi thẳng
+ * @param   request  Con trỏ tới đối tượng request
+ */
+void handle_Forward(AsyncWebServerRequest *request)
+{
   displayFW = true;
   command = Navigation::Forward;
   request->send(200, "text/plain", "OK");
 }
 
-//------------------------------------------------------------------
-void handle_Backward(AsyncWebServerRequest *request){
+/**
+ * @brief   Xử lý lệnh di chuyển robot đi lùi
+ * @param   request  Con trỏ tới đối tượng request
+ */
+void handle_Backward(AsyncWebServerRequest *request)
+{
   displayBW = true;
   command = Navigation::Backward;
   request->send(200, "text/plain", "OK");
 }
 
-//------------------------------------------------------------------
-void handle_TurnLeft(AsyncWebServerRequest *request){
+/**
+ * @brief   Xử lý lệnh di chuyển robot rẽ trái
+ * @param   request  Con trỏ tới đối tượng request
+ */
+void handle_TurnLeft(AsyncWebServerRequest *request)
+{
   displayTL = true;
   command = Navigation::Left;
   request->send(200, "text/plain", "OK");
 }
 
-//------------------------------------------------------------------
-void handle_TurnRight(AsyncWebServerRequest *request){
+/**
+ * @brief   Xử lý lệnh di chuyển robot rẽ phải
+ * @param   request  Con trỏ tới đối tượng request
+ */
+void handle_TurnRight(AsyncWebServerRequest *request)
+{
   displayTR = true;
   command = Navigation::Right;
   request->send(200, "text/plain", "OK");
 }
 
-//------------------------------------------------------------------
-void handle_StopRobot(AsyncWebServerRequest *request){
+/**
+ * @brief   Xử lý lệnh dừng robot
+ * @param   request  Con trỏ tới đối tượng request
+ */
+void handle_StopRobot(AsyncWebServerRequest *request)
+{
   displayST = true;
   command = Navigation::StopRobot;
   request->send(200, "text/plain", "OK");
 }
 
-//------------------------------------------------------------------
-void control_Robot(Navigation cmd){
-  switch(cmd){
+/**
+ * @brief   Xử lý lệnh điều khiển robot, gửi lệnh tới STM32
+ * @param   cmd     Lệnh điều khiển robot (enum Navigation)
+ */
+void control_Robot(Navigation cmd)
+{
+  switch(cmd)
+  {
     case Navigation::StopRobot:
-      if (displayST){
+      if (displayST)
+      {
         Serial.println("Stop Robot");
         displayST = false;
       }
@@ -415,7 +479,8 @@ void control_Robot(Navigation cmd){
       break;
       
     case Navigation::Forward:
-      if (displayFW){
+      if (displayFW)
+      {
         Serial.printf("Move Forward - Speed: %d\n", wheelSpeed);
         displayFW = false;
       }
@@ -424,7 +489,8 @@ void control_Robot(Navigation cmd){
       break;
       
     case Navigation::Backward:
-      if (displayBW){
+      if (displayBW)
+      {
         Serial.printf("Move Backward - Speed: %d\n", wheelSpeed);
         displayBW = false;
       }
@@ -433,7 +499,8 @@ void control_Robot(Navigation cmd){
       break;
       
     case Navigation::Left:
-      if (displayTL){
+      if (displayTL)
+      {
         Serial.printf("Turn Left - Speed: %d\n", wheelSpeed);
         displayTL = false;
       }
@@ -442,7 +509,8 @@ void control_Robot(Navigation cmd){
       break;
       
     case Navigation::Right:
-      if (displayTR){
+      if (displayTR)
+      {
         Serial.printf("Turn Right - Speed: %d\n", wheelSpeed);
         displayTR = false;
       }
@@ -455,8 +523,12 @@ void control_Robot(Navigation cmd){
   }
 }
 
-//------------------------------------------------------------------
-void get_WheelSpeed(AsyncWebServerRequest *request){
+/**
+ * @brief   Xử lý nhận tốc độ bánh xe từ request HTTP GET
+ * @param   request  Con trỏ tới đối tượng request
+ */
+void get_WheelSpeed(AsyncWebServerRequest *request)
+{
   if (request->hasParam("value1")){
     int speed1 = request->getParam("value1")->value().toInt();
     if (speed1 >= 0 && speed1 <= 23){
@@ -471,116 +543,179 @@ void get_WheelSpeed(AsyncWebServerRequest *request){
   send_data_to_STM();
 }
 
-//------------------------------------------------------------------
-void get_BrushSpeed(AsyncWebServerRequest *request){
-  if (request->hasParam("value2")){
+/**
+ * @brief   Xử lý nhận tốc độ bàn chải từ request HTTP GET
+ * @param   request  Con trỏ tới đối tượng request
+ */
+void get_BrushSpeed(AsyncWebServerRequest *request)
+{
+  if (request->hasParam("value2"))
+  {
     int speed2 = request->getParam("value2")->value().toInt();
-    if (speed2 >= 0 && speed2 <= 53){
+    if (speed2 >= 0 && speed2 <= 53)
+    {
       brushSpeed = speed2;
       //Serial.printf("Brush speed: %d\n", brushSpeed);
     }
     request->send(200, "text/plain", "Speed value received successful");
   }
-  else{
+  else
+  {
     request->send(404, "text/plain", "Missing speed value");
   }
   send_data_to_STM();
 }
 
-//------------------------------------------------------------------
-void handle_RunBrush(AsyncWebServerRequest *request){
+/**
+ * @brief   Xử lý bật/tắt động cơ chổi theo request HTTP POST
+ * @param   request  Con trỏ tới đối tượng request
+ */
+void handle_RunBrush(AsyncWebServerRequest *request)
+{
   String brush;
-  if (request->hasParam(status_brush)){
+  if (request->hasParam(status_brush))
+  {
     statusBrush = request->getParam(status_brush)->value().toInt();
   }
   request->send(200, "text/plain", "OK");
+
   //StrToInt(brush, statusBrush);
-  if (statusBrush == 1){
+
+  if (statusBrush == 1)
+  {
     Serial.println("Run Brush");
   }
-  else if (statusBrush == 0){
+  else if (statusBrush == 0)
+  {
     Serial.println("Stop Brush");
   }
   send_data_to_STM();
 }
 
-//------------------------------------------------------------------
-void handle_AutoMode(AsyncWebServerRequest *request){
+/**
+ * @brief   Xử lý bật/tắt chế độ tự động robot
+ * @param   request  Con trỏ tới đối tượng request
+ */
+void handle_AutoMode(AsyncWebServerRequest *request)
+{
   String automode;
-  if (request->hasParam(status_auto)){
+
+  if (request->hasParam(status_auto))
+  {
     statusAuto = request->getParam(status_auto)->value().toInt();
   }
   request->send(200, "text/plain", "OK");
+
   //StrToInt(automode, statusAuto);
-  if (statusAuto == 1){
+
+  if (statusAuto == 1)
+  {
     Serial.println("Run Auto Mode");
   }
-  else if (statusAuto == 0){
+  else if (statusAuto == 0)
+  {
     Serial.println("Stop Auto Mode");
   }
   send_data_to_STM();
 }
 
-//------------------------------------------------------------------
-void handle_Pump(AsyncWebServerRequest *request){
+/**
+ * @brief   Xử lý bật/tắt máy bơm nước theo request HTTP POST
+ * @param   request  Con trỏ tới đối tượng request
+ */
+void handle_Pump(AsyncWebServerRequest *request)
+{
   String pump;
-  if (request->hasParam(status_pump)){
+
+  if (request->hasParam(status_pump))
+  {
     statusPump = request->getParam(status_pump)->value().toInt();
   }
   request->send(200, "text/plain", "OK");
+
   //StrToInt(pump, statusPump);
-  if (statusPump == 1){
+
+  if (statusPump == 1)
+  {
     Serial.println("Open Pump");
   }
-  else if (statusPump == 0){
+  else if (statusPump == 0)
+  {
     Serial.println("Close Pump");
   }
   send_data_to_STM();
 }
 
-//------------------------------------------------------------------
-void handle_NotFound(AsyncWebServerRequest *request){
+/**
+ * @brief   Xử lý trang lỗi khi không tìm thấy URL phù hợp
+ * @param   request  Con trỏ tới đối tượng request
+ */
+void handle_NotFound(AsyncWebServerRequest *request)
+{
   request->send(404, "text/plain", "Page Not Found");  //404 or 500
 }
 
-//------------------------------------------------------------------
-void get_device(WiFiEvent_t event, WiFiEventInfo_t info){
+/**
+ * @brief   Sự kiện có thiết bị kết nối tới AP
+ * @param   event   Loại sự kiện WiFi
+ * @param   info    Thông tin thiết bị kết nối
+ */
+void get_device(WiFiEvent_t event, WiFiEventInfo_t info)
+{
   Serial.println();
   deviceCount = WiFi.softAPgetStationNum();
   Serial.printf("Number of connected stations: %d\n",deviceCount);
   Serial.println("Station connected");
-  for(int i = 0; i< 6; i++){
+  for (int i=0; i<6; i++)
+
+  {
     Serial.printf("%02X", info.sta_connected.mac[i]);  
-    if(i<5)Serial.print(":");
+    if (i<5) Srial.print(":");
   }
   Serial.println("\n------------");
 }
 
-//------------------------------------------------------------------
-void lost_device(WiFiEvent_t event, WiFiEventInfo_t info){
+/**
+ * @brief   Sự kiện thiết bị ngắt kết nối khỏi AP
+ * @param   event   Loại sự kiện WiFi
+ * @param   info    Thông tin thiết bị ngắt kết nối
+ */
+void lost_device(WiFiEvent_t event, WiFiEventInfo_t info)
+{
   Serial.println();
   deviceCount = WiFi.softAPgetStationNum();
   Serial.printf("Number of connected stations: %d\n",deviceCount);
   Serial.println("Station disconnected");
-  for(int i = 0; i< 6; i++){
+
+  for (int i=0; i<6; i++)
+  {
     Serial.printf("%02X", info.sta_disconnected.mac[i]);  
-    if(i<5)Serial.print(":");
+    if (i<5) Serial.print(":");
   }
   Serial.println("\n------------");
 }
 
-//------------------------------------------------------------------
-void get_Devices(AsyncWebServerRequest *request){
+/**
+ * @brief   Xử lý request lấy danh sách thiết bị đang kết nối
+ * @param   request  Con trỏ tới đối tượng request
+ */
+void get_Devices(AsyncWebServerRequest *request)
+{
   deviceCount = WiFi.softAPgetStationNum();
-  for (int i=0; i < deviceCount; i++){
+
+  for (int i=0; i<deviceCount; i++)
+  {
     String mac_address = WiFi.softAPmacAddress();
     deviceList += mac_address + "<br>";
   }
   request->send(200, "text/html", deviceList);
 }
 
-//------------------------------------------------------------------
-void send_data_to_STM(void){
+/**
+ * @brief   Gửi dữ liệu điều khiển xuống STM32 qua UART
+ */
+void send_data_to_STM(void)
+{
   char data_wheelspeed[4], data_brushspeed[4];
   IntToStr(3, wheelSpeed, data_wheelspeed);
   IntToStr(3, brushSpeed, data_brushspeed);
@@ -589,43 +724,65 @@ void send_data_to_STM(void){
                      + statusAuto  + '_' + statusPump + '_' 
                      + String(data_rasp1) + '_' + String(data_rasp2) + '_' + '\r' + '\n';
   Serial.println(txbuff);
-  if (txbuff.length() == 24){
+  
+  if (txbuff.length() == 24)
+  {
     Serial2.write(txbuff.c_str(),txbuff.length());
   }            
-  else{
+  else
+  {
     Serial2.flush();
   }
   
   delay(200);
 }
 
-//------------------------------------------------------------------
-void IntToStr(int length, int u, char *y){
+/**
+ * @brief   Chuyển đổi số nguyên sang chuỗi ký tự ASCII
+ * @param   length  Độ dài chuỗi kết quả
+ * @param   u       Số nguyên cần chuyển đổi
+ * @param   y       Bộ đệm chứa chuỗi kết quả (cần đủ kích thước)
+ */
+void IntToStr(int length, int u, char *y)
+{
   int a = 0;
   a = u;
-  for (int i=length-1; i>=0; i--){
+  for (int i=length-1; i>=0; i--)
+  {
     y[i] = (a % 10) + 0x30;
     a /= 10;
   }
   y[length] = '\0';
 }
 
-//------------------------------------------------------------------
-void StrToInt(String str, int a){
+/**
+ * @brief   Chuyển chuỗi số (String) sang số nguyên int
+ * @param   str     Chuỗi ký tự số
+ * @param   a       Biến int nhận kết quả
+ * @note    Hàm gán giá trị vào a, nên truyền tham chiếu mới đúng.
+ */
+void StrToInt(String str, int a)
+{
   int value = 0;
-  switch(str.length()){
+
+  switch (str.length())
+  {
     case 4:
       value = (str[3] - 0x30) + (str[2] - 0x30)*10 + (str[1] - 0x30)*100 + (str[0] - 0x30)*1000;
       break;
+
     case 3:
       value = (str[2] - 0x30) + (str[1] - 0x30)*10 + (str[0] - 0x30)*100;
       break;
+
     case 2:
       value = (str[1] - 0x30) + (str[0] - 0x30)*10;
       break;
+
     case 1:
       value = str[0] - 0x30;
       break;
+
     default:
       break;
   }
@@ -633,12 +790,20 @@ void StrToInt(String str, int a){
   a = value;
 }
 
-//------------------------------------------------------------------
-void read_data_from_rasp(void){
-  while (Serial.available()){
+/**
+ * @brief   Đọc dữ liệu từ module Raspberry Pi qua Serial
+ */
+void read_data_from_rasp(void)
+{
+  while (Serial.available())
+  {
     char x = Serial.read();
-    if (x != '\n') data_rcv += x;
-    else if (x == '\n'){
+    if (x != '\n') 
+    {
+      data_rcv += x;
+    }
+    else if (x == '\n')
+    {
       Serial.println(data_rcv);
       data_rasp1 = data_rcv[0];
       data_rasp2 = data_rcv[1];
@@ -647,17 +812,24 @@ void read_data_from_rasp(void){
 //      Serial.print("Char 2: ");
 //      Serial.println(data_rasp2); 
       rcv_flag = true;
-      
     }
   }
 }
 
-//------------------------------------------------------------------
-void read_data_from_STM(void){
-  while (Serial2.available()){
+/**
+ * @brief   Đọc dữ liệu từ STM32 qua Serial2
+ */
+void read_data_from_STM(void)
+{
+  while (Serial2.available())
+  {
       char x = Serial2.read();
-      if (x != '\n') rxbuff +=x;
-      else if (x == '\n'){
+      if (x != '\n') 
+      {
+        rxbuff += x;
+      }
+      else if (x == '\n')
+      {
 //        Serial.println("String received: " + String(rxbuff));
 //        Serial.printf("Length: %d\n", rxbuff.length()); 
         data_send = rxbuff;
@@ -667,8 +839,12 @@ void read_data_from_STM(void){
   delay(10);
 }
 
-//------------------------------------------------------------------
-void handleSendData(AsyncWebServerRequest *request){
+/**
+ * @brief   Xử lý gửi dữ liệu đã nhận qua web server
+ * @param   request Con trỏ tới đối tượng request
+ */
+void handleSendData(AsyncWebServerRequest *request)
+{
    Serial.println("String send: " + String(data_send));
    Serial.printf("Length: %d\n", data_send.length()); 
    request->send(200, "text/plain", data_send);
