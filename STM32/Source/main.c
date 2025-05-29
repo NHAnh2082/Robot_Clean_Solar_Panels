@@ -295,18 +295,5 @@ int main(void)
 		{
 			GPIO_ResetBits(LED_GPIO_PORT, LED_FORWARD | LED_BACKWARD | LED_LEFT | LED_RIGHT);
 		}
-			
-		if (rcv_flag == 2)
-		{
-			memset(rxbuff, 0, sizeof(rxbuff));
-			stop_Robot();
-			delay_01ms(20000);
-			toggleLed1(500);
-			USART_SendData(UART4,'R');
-		}
-		else if (rcv_flag == 3)
-		{
-			NVIC_SystemReset();
-		}
 	}	
 }

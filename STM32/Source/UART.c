@@ -202,27 +202,45 @@ void DMA1_Stream2_IRQHandler(void)
 		
 		if ((rxbuff[0] == 'M') && (rxbuff[BUFF_SIZE_RX-1] == '\n'))
 		{
-			for(i=0; i<BUFF_SIZE_RX; i++) a[i] = rxbuff[i];
+			for (i=0; i<BUFF_SIZE_RX; i++) 
+			{
+				a[i] = rxbuff[i];
+			}
 			rcv_flag = 1;
+		}
+		else if ((rxbuff[0] == 'S') && (rxbuff[1] == 'E') && (rxbuff[BUFF_SIZE_RX-1] == '\n'))
+		{
+			for (i=0; i<BUFF_SIZE_RX; i++) 
+			{
+				a[i] = rxbuff[i];
+			}
+			rcv_flag = 2;
 		}
 		else
 		{
-			rcv_flag = 2;
+			rcv_flag = 3;
 		}
 		
 		if (rcv_flag)
 		{
 			SplitStr();
-			StrToInt(3,data_sp1,&wheel_speed);
-			StrToInt(3,data_sp2,&brush_speed);
+			StrToInt(3, data_sp1, &wheel_speed);
+			StrToInt(3, data_sp2, &brush_speed);
 			rxbuff[BUFF_SIZE_RX-2] = 0x0D;
 			rxbuff[BUFF_SIZE_RX-1] = 0x0A;
 		}
 		else if (rcv_flag == 2)
 		{
 			memset(rxbuff, 0, sizeof(rxbuff));
-			NVIC_SystemReset();
+			stop_Robot();
+			delay_01ms(20000);
+			toggleLed1(500);
+			USART_SendData(UART4,'R');
 		}
+		else if (rcv_flag == 3)
+		{
+			NVIC_SystemReset();
+		}		
 
 		DMA_Cmd(DMA1_Stream2, ENABLE);
 	}
